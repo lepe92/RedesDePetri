@@ -5,6 +5,11 @@
  */
 package redespetri;
 
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
@@ -19,6 +24,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
 
 /**
  *
@@ -47,10 +56,10 @@ public class RedesPetri {
     static ArrayList<Nodo> copiaLQdesendiente = new ArrayList<>();//nodos ya procesados
     static int time = 0;
 
-    public String getPropiedades(){
-    return propiedades;
+    public String getPropiedades() {
+        return propiedades;
     }
-    
+
     public RedesPetri(String file) {
         leerArchivo(file);
         //generar nodos
@@ -123,6 +132,11 @@ public class RedesPetri {
             propiedades += "No es repetitiva" + "\n";
         }
         esViva();
+        try {
+            DisplayImage();
+        } catch (IOException ex) {
+            Logger.getLogger(RedesPetri.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     public int[][] getMi() {
@@ -574,9 +588,9 @@ public class RedesPetri {
             String dotPath = "C:\\Program Files (x86)\\Graphviz2.38\\bin\\dot.exe";
 
             String fileInputPath = "grafo.txt";
-            String fileOutputPath = "grafo.pdf";
+            String fileOutputPath = "grafo.png";
 
-            String tParam = "-Tpdf";
+            String tParam = "-Tpng";
             String tOParam = "-o";
 
             String[] cmd = new String[5];
@@ -589,10 +603,34 @@ public class RedesPetri {
             Runtime rt = Runtime.getRuntime();
 
             rt.exec(cmd);
-
+            
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    public void DisplayImage() throws IOException {
+        BufferedImage img = ImageIO.read(new File("grafo.png"));
+        ImageIcon icon = new ImageIcon(img);
+        JFrame frame = new JFrame();
+        frame.setLayout(new FlowLayout());
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        double width = screenSize.getWidth();
+        double height = screenSize.getHeight();
+        if (icon.getIconWidth()>width) {
+            Image newimg = img.getScaledInstance((int)width-60, icon.getIconHeight(),  java.awt.Image.SCALE_SMOOTH);
+            icon = new ImageIcon(newimg);
+        }
+        else if(icon.getIconHeight() > height){
+        Image newimg = img.getScaledInstance(icon.getIconWidth(), (int)height-60,  java.awt.Image.SCALE_SMOOTH);
+            icon = new ImageIcon(newimg);
+        }
+            frame.setSize(icon.getIconWidth(), icon.getIconHeight());
+        JLabel lbl = new JLabel();
+        lbl.setIcon(icon);
+        frame.add(lbl);
+        frame.setVisible(true);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
     public static ArrayList CalculaTInvariantes(int[][] mi) {

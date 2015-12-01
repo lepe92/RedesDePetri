@@ -5,9 +5,18 @@
  */
 package interfaz;
 
+import java.awt.FlowLayout;
+import java.awt.image.BufferedImage;
 import redespetri.RedesPetri;
 import java.io.File;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -144,18 +153,26 @@ public class Ventana extends javax.swing.JFrame {
         } else {
             //ejecutar el programa
             cad = abre.toString();
-            iniciaPrograma(cad);
-            //      System.out.println(cad);
+            try {
+                iniciaPrograma(cad);
+                //      System.out.println(cad);
+            } catch (IOException ex) {
+                Logger.getLogger(Ventana.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         return cad;
     }
 
-    public void iniciaPrograma(String archivo){
+    public void iniciaPrograma(String archivo) throws IOException{
      RedesPetri m = new RedesPetri(archivo);
+     jTextArea1.setText("");
         String prep=m.getPropiedades();
         jTextArea1.setText(prep);
+        m=null;
+        //aqui ya calculo y generó todo lo que debía
     }
     
+     
     /**
      * @param args the command line arguments
      */
