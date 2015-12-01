@@ -9,6 +9,8 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Image;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -28,6 +30,7 @@ import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.Timer;
 
 /**
  *
@@ -36,7 +39,7 @@ import javax.swing.JLabel;
 public class RedesPetri {
 
     String grafo_file = "digraph G {";
-
+    String matrizincidencia = "";
     static boolean Repetitiva = false;
     static boolean Conservativa = true;
     static boolean Acotada = true;
@@ -132,11 +135,11 @@ public class RedesPetri {
             propiedades += "No es repetitiva" + "\n";
         }
         esViva();
-        try {
-            DisplayImage();
-        } catch (IOException ex) {
-            Logger.getLogger(RedesPetri.class.getName()).log(Level.SEVERE, null, ex);
-        }
+
+    }
+
+    public String getMit() {
+        return matrizincidencia;
     }
 
     public int[][] getMi() {
@@ -329,17 +332,22 @@ public class RedesPetri {
 
         System.out.println("Matriz de incidencia");
         String cad = "   ";
+
         for (int i = 0; i < t.size(); i++) {
             cad += t.get(i).name + "|";
         }
         System.out.println(cad);
 
+        matrizincidencia += cad + "\n";
         for (int i = 0; i < p.size(); i++) {
             System.out.print(p.get(i).nombre + "|");
+            matrizincidencia += p.get(i).nombre + "|";
             for (int j = 0; j < t.size(); j++) {
                 System.out.print(mi[i][j] + " |");
+                matrizincidencia += mi[i][j] + " |";
             }
             System.out.println();
+            matrizincidencia += "\n";
         }
 
         System.out.println("\nPRE");
@@ -603,13 +611,31 @@ public class RedesPetri {
             Runtime rt = Runtime.getRuntime();
 
             rt.exec(cmd);
-            
+
+             timera.start();
+
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
 
-    public void DisplayImage() throws IOException {
+    ActionListener actListner = new ActionListener(){
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            try {
+                DisplayImage();
+                timera.stop();
+            } catch (IOException ex) {
+                Logger.getLogger(RedesPetri.class.getName()).log(Level.SEVERE, null, ex);
+            }
+           // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+    };
+    Timer timera = new Timer(1000, actListner);
+   
+
+
+public void DisplayImage() throws IOException {
         BufferedImage img = ImageIO.read(new File("grafo.png"));
         ImageIcon icon = new ImageIcon(img);
         JFrame frame = new JFrame();
@@ -617,20 +643,19 @@ public class RedesPetri {
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         double width = screenSize.getWidth();
         double height = screenSize.getHeight();
-        if (icon.getIconWidth()>width) {
-            Image newimg = img.getScaledInstance((int)width-60, icon.getIconHeight(),  java.awt.Image.SCALE_SMOOTH);
+        if (icon.getIconWidth() > width) {
+            Image newimg = img.getScaledInstance((int) width - 60, icon.getIconHeight(), java.awt.Image.SCALE_SMOOTH);
+            icon = new ImageIcon(newimg);
+        } else if (icon.getIconHeight() > height) {
+            Image newimg = img.getScaledInstance(icon.getIconWidth(), (int) height - 60, java.awt.Image.SCALE_SMOOTH);
             icon = new ImageIcon(newimg);
         }
-        else if(icon.getIconHeight() > height){
-        Image newimg = img.getScaledInstance(icon.getIconWidth(), (int)height-60,  java.awt.Image.SCALE_SMOOTH);
-            icon = new ImageIcon(newimg);
-        }
-            frame.setSize(icon.getIconWidth(), icon.getIconHeight());
+        frame.setSize(icon.getIconWidth(), icon.getIconHeight());
         JLabel lbl = new JLabel();
         lbl.setIcon(icon);
         frame.add(lbl);
         frame.setVisible(true);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 
     public static ArrayList CalculaTInvariantes(int[][] mi) {
