@@ -34,6 +34,8 @@ public class RedesPetri {
     static boolean LibreDeBloqueo = true;
     static int mi[][], pre[][], pos[][];
 
+    static String propiedades = "";
+
     int mark[];
 
     static ArrayList<estado> p = new ArrayList();
@@ -44,6 +46,89 @@ public class RedesPetri {
     static ArrayList<Nodo> LQ = new ArrayList();//nodos ya procesados
     static ArrayList<Nodo> copiaLQdesendiente = new ArrayList<>();//nodos ya procesados
     static int time = 0;
+
+    public String getPropiedades(){
+    return propiedades;
+    }
+    
+    public RedesPetri(String file) {
+        leerArchivo(file);
+        //generar nodos
+        //eliminar comentario para poder realizar las pruebas
+        primerMarcado();
+
+        ArrayList<Nodo> LQt = computeGt();
+
+        //System.out.println(LQ.size());
+        ArrayList<int[]> inva = CalculaPInvariantes(mi);
+        System.out.println("P-invariantes");
+        if (!inva.isEmpty()) {
+            for (int i = 0; i < inva.size(); i++) {
+                int mtem[] = inva.get(i);
+                for (int j = 0; j < mi.length; j++) {
+                    System.out.print(mtem[j] + " ");
+                }
+                System.out.println("");
+            }
+        } else {
+            System.out.println("No se obtuvieron p-invariantes");
+        }
+        //  System.out.println(LQ.get(0).hijos.get(0).homomorfismo());
+        // System.out.println(LQ.get(0).hijos.get(1).homomorfismo());
+
+        // System.out.println(LQ.get(9).homomorfismo()+" "+LQ.get(9).hijos.size());
+        int transi[][] = miTranspuesta();
+        System.out.println("Calculo de t invariantes");
+        ArrayList<int[]> tinva = CalculaTInvariantes(transi);
+        System.out.println("t-invariantes");
+        int ctaRepetitiva = 0;
+        if (!tinva.isEmpty()) {
+            for (int i = 0; i < tinva.size(); i++) {
+                int mtem[] = tinva.get(i);
+                for (int j = 0; j < t.size(); j++) {
+                    System.out.print(mtem[j] + " ");
+                    if (mtem[j] == 1) {
+                        ctaRepetitiva++;
+                    }
+                }
+                System.out.println("");
+            }
+        } else {
+            System.out.println("No se obtuvieron t-invariantes");
+        }
+        if (ctaRepetitiva == t.size()) {
+            Repetitiva = true;
+        }
+        if (Acotada) {
+            propiedades += "Acotada" + "\n";
+        } else {
+            propiedades += "No Acotada" + "\n";
+        }
+        LibreDeBloqueo = !esLibreDeBloqueo();
+        if (LibreDeBloqueo) {
+            propiedades += "Libre de bloqueo" + "\n";
+        } else {
+            propiedades += "No Libre de bloqueo" + "\n";
+        }
+        //ver si es conservativa
+        esEstrictamenteConservativa();
+        if (Conservativa) {
+            propiedades += "Estrictamente conservativa" + "\n";
+        } else {
+            propiedades += "No es conservativa" + "\n";
+        }
+        if (Repetitiva) {
+            propiedades += "Si es repetitiva" + "\n";
+        } else {
+            propiedades += "No es repetitiva" + "\n";
+        }
+        esViva();
+    }
+
+    public int[][] getMi() {
+        return mi;
+    }
+
     public void leerArchivo(String file) {
         try {
 
@@ -310,17 +395,17 @@ public class RedesPetri {
                 mayoriza(temp);
                 //verificar si ya existe
                 if (isinQ(temp) == null && isinP(temp) == null) {
-                    
+
                     padre.hijos.add(temp);//añadir el hijo
 
                     LP.add(temp);
 
-                    if(t_disparados.contains(temp.tranDisparada)==false){
+                    if (t_disparados.contains(temp.tranDisparada) == false) {
                         t_disparados.add(temp.tranDisparada);
-                    }   
+                    }
                     //anadimos a grafo_file para el archivo node1 -> node2 [label="linea1"];
                     grafo_file += padre.homomorfismo() + " -> " + temp.homomorfismo() + "[label=\"" + temp.tranDisparada + "\"];";
-                    
+
                 } else {
 
                     if (!(isinQ(temp) == null)) { //Está en Q
@@ -328,9 +413,9 @@ public class RedesPetri {
                     } else { //Está en P.
                         padre.hijos.add(isinP(temp));
                     }
-                    if(t_disparados.contains(temp.tranDisparada)==false){
+                    if (t_disparados.contains(temp.tranDisparada) == false) {
                         t_disparados.add(temp.tranDisparada);
-                    }   
+                    }
                     System.out.println("Ya existe");
                     grafo_file += padre.homomorfismo() + " -> " + temp.homomorfismo() + "[label=\"" + temp.tranDisparada + "\"];";
                 }
@@ -384,7 +469,7 @@ public class RedesPetri {
             }
             repetido = false;
             temp = temp.padre;
-            }
+        }
     }
 
     public Nodo isinQ(Nodo x) {
@@ -510,7 +595,7 @@ public class RedesPetri {
         }
     }
 
-       public static ArrayList CalculaTInvariantes(int[][] mi) {
+    public static ArrayList CalculaTInvariantes(int[][] mi) {
         ArrayList<int[]> invariantsTemp = new ArrayList();//se usa para iterar
         ArrayList<int[]> invariants = new ArrayList();//devuelve t o p -invariantes
 
@@ -589,7 +674,7 @@ public class RedesPetri {
         }//fin del while
         return invariants;
     }
-    
+
     public static ArrayList CalculaPInvariantes(int[][] mi) {
         ArrayList<int[]> invariantsTemp = new ArrayList();//se usa para iterar
         ArrayList<int[]> invariants = new ArrayList();//devuelve t o p -invariantes
@@ -723,6 +808,7 @@ public class RedesPetri {
         }
         return aux;
     }
+
     public static int DFS(ArrayList<Nodo> G, Nodo u) {
         time = 0;
         for (Nodo nodo : G) {
@@ -739,7 +825,7 @@ public class RedesPetri {
     }
 
     public static int DFS_Visit(Nodo nodoTemp) {
-        String trans ="";
+        String trans = "";
         time = time + 1;
         nodoTemp.tiempoInicial = time;
         nodoTemp.color = "GRAY";
@@ -753,130 +839,127 @@ public class RedesPetri {
         time = time + 1;
         nodoTemp.tiempoFinal = time;
         copiaLQdesendiente.add(nodoTemp);
-        
-        
+
         return 0;
     }
-    
-    public static void esViva(){
+
+    public static void esViva() {
         //copiaLQ = new ArrayList<>(LQ);
         //DFS(copiaLQ, copiaLQ.get(0));
         ArrayList<Nodo> G_transpuesta = computeGt();
         Nodo nodoInicialGt = getNodoT(LQ.get(0).marcado, G_transpuesta);
         DFS(G_transpuesta, nodoInicialGt);
-        if (copiaLQdesendiente.size()==LQ.size()){
-            System.out.print("Es reversible\n");
-            if (t_disparados.size()==t.size()) {
-                System.out.print("Es viva\n");
+        if (copiaLQdesendiente.size() == LQ.size()) {
+            propiedades += "Es reversible\n";
+            if (t_disparados.size() == t.size()) {
+                propiedades += "Es viva\n";
+            } else {
+                propiedades += "No es viva\n";
             }
-            else{
-                System.out.print("No es viva\n");
-            }
-        }
-        else{
-            System.out.print("No es reversible y no es viva\n");
+        } else {
+            propiedades += "No es reversible y no es viva\n";
         }
     }
-    
-    
+
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
-        RedesPetri m = new RedesPetri();
+    /* public static void main(String[] args) {
+     RedesPetri m = new RedesPetri();
 
-        m.leerArchivo("redes/no acotada 3 estados.xml");
-        //generar nodos
-        //eliminar comentario para poder realizar las pruebas
-        m.primerMarcado();
+     m.leerArchivo("redes/no acotada 3 estados.xml");
+     //generar nodos
+     //eliminar comentario para poder realizar las pruebas
+     m.primerMarcado();
 
-        ArrayList<Nodo> LQt = computeGt();
+     ArrayList<Nodo> LQt = computeGt();
 
-        //System.out.println(LQ.size());
-        ArrayList<int[]> inva = CalculaPInvariantes(mi);
-        System.out.println("P-invariantes");
-        if (!inva.isEmpty()) {
-            for (int i = 0; i < inva.size(); i++) {
-                int mtem[] = inva.get(i);
-                for (int j = 0; j < mi.length; j++) {
-                    System.out.print(mtem[j] + " ");
-                }
-                System.out.println("");
-            }
-        }
-        else{
-            System.out.println("No se obtuvieron p-invariantes");
-        }
-        //  System.out.println(LQ.get(0).hijos.get(0).homomorfismo());
-        // System.out.println(LQ.get(0).hijos.get(1).homomorfismo());
+     //System.out.println(LQ.size());
+     ArrayList<int[]> inva = CalculaPInvariantes(mi);
+     System.out.println("P-invariantes");
+     if (!inva.isEmpty()) {
+     for (int i = 0; i < inva.size(); i++) {
+     int mtem[] = inva.get(i);
+     for (int j = 0; j < mi.length; j++) {
+     System.out.print(mtem[j] + " ");
+     }
+     System.out.println("");
+     }
+     }
+     else{
+     System.out.println("No se obtuvieron p-invariantes");
+     }
+     //  System.out.println(LQ.get(0).hijos.get(0).homomorfismo());
+     // System.out.println(LQ.get(0).hijos.get(1).homomorfismo());
 
-        // System.out.println(LQ.get(9).homomorfismo()+" "+LQ.get(9).hijos.size());
-        int transi[][] = miTranspuesta();
-        System.out.println("Calculo de t invariantes");
-        ArrayList<int[]> tinva = CalculaTInvariantes(transi);
-        System.out.println("t-invariantes");
-        int ctaRepetitiva = 0;
-        if (!tinva.isEmpty()){
-            for (int i = 0; i < tinva.size(); i++) {
-                int mtem[] = tinva.get(i);
-                for (int j = 0; j < t.size(); j++) {
-                     System.out.print(mtem[j] + " ");
-                    if (mtem[j] == 1) {
-                        ctaRepetitiva++;
-                    }
-                }
-                System.out.println("");
-            }
-        }
-         else{
-            System.out.println("No se obtuvieron t-invariantes");
-        }
-        if (ctaRepetitiva == t.size()) {
-            Repetitiva = true;
-        }
-        if (Acotada) {
-            System.out.println("Acotada");
-        } else {
-            System.out.println("No Acotada");
-        }
-        LibreDeBloqueo = !esLibreDeBloqueo();
-        if (LibreDeBloqueo) {
-            System.out.println("Libre de bloqueo");
-        } else {
-            System.out.println("No Libre de bloqueo");
-        }
-        //ver si es conservativa
-        esEstrictamenteConservativa();
-        if (Conservativa) {
-            System.out.println("Estrictamente conservativa");
-        } else {
-            System.out.println("No es conservativa");
-        }
-        if (Repetitiva) {
-            System.out.println("Si es repetitiva");
-        } else {
-            System.out.println("No es repetitiva");
-        }
-        esViva();
-        /* for (int i = 0; i < t.size(); i++) {
-         for (int j = 0; j < p.size(); j++) {
-         System.out.print(transi[i][j]);
-         }System.out.println("");
-         }*/
-        /*for (int i = 0; i < copiaLQdesendiente.size(); i++) {
-            System.out.println("-------  " + copiaLQdesendiente.get(i).homomorfismo() 
-                    + " -----t inicial  " + copiaLQdesendiente.get(i).tiempoInicial
-                    + "------ t final  " + copiaLQdesendiente.get(i).tiempoFinal);
-            //System.out.println("estado  " + LQ.get(i).homomorfismo());
-        }
-        for (int i = 0; i < LQ.size(); i++) {
-            System.out.println("estado  " + LQ.get(i).homomorfismo());
-        }
-        for (int j = 0; j < copiaLQdesendiente.size(); j++) {
-            System.out.println("estadoc  " + copiaLQdesendiente.get(j).homomorfismo());
-        }
-        for (int d = 0; d < t_disparados.size(); d++) {
-            System.out.println("transiciones disparadas-- " + t_disparados.get(d));
-        }*/
-    }
+     // System.out.println(LQ.get(9).homomorfismo()+" "+LQ.get(9).hijos.size());
+     int transi[][] = miTranspuesta();
+     System.out.println("Calculo de t invariantes");
+     ArrayList<int[]> tinva = CalculaTInvariantes(transi);
+     System.out.println("t-invariantes");
+     int ctaRepetitiva = 0;
+     if (!tinva.isEmpty()){
+     for (int i = 0; i < tinva.size(); i++) {
+     int mtem[] = tinva.get(i);
+     for (int j = 0; j < t.size(); j++) {
+     System.out.print(mtem[j] + " ");
+     if (mtem[j] == 1) {
+     ctaRepetitiva++;
+     }
+     }
+     System.out.println("");
+     }
+     }
+     else{
+     System.out.println("No se obtuvieron t-invariantes");
+     }
+     if (ctaRepetitiva == t.size()) {
+     Repetitiva = true;
+     }
+     if (Acotada) {
+     System.out.println("Acotada");
+     } else {
+     System.out.println("No Acotada");
+     }
+     LibreDeBloqueo = !esLibreDeBloqueo();
+     if (LibreDeBloqueo) {
+     System.out.println("Libre de bloqueo");
+     } else {
+     System.out.println("No Libre de bloqueo");
+     }
+     //ver si es conservativa
+     esEstrictamenteConservativa();
+     if (Conservativa) {
+     System.out.println("Estrictamente conservativa");
+     } else {
+     System.out.println("No es conservativa");
+     }
+     if (Repetitiva) {
+     System.out.println("Si es repetitiva");
+     } else {
+     System.out.println("No es repetitiva");
+     }
+     esViva();
+     /* for (int i = 0; i < t.size(); i++) {
+     for (int j = 0; j < p.size(); j++) {
+     System.out.print(transi[i][j]);
+     }System.out.println("");
+     }*/
+    /*for (int i = 0; i < copiaLQdesendiente.size(); i++) {
+     System.out.println("-------  " + copiaLQdesendiente.get(i).homomorfismo() 
+     + " -----t inicial  " + copiaLQdesendiente.get(i).tiempoInicial
+     + "------ t final  " + copiaLQdesendiente.get(i).tiempoFinal);
+     //System.out.println("estado  " + LQ.get(i).homomorfismo());
+     }
+     for (int i = 0; i < LQ.size(); i++) {
+     System.out.println("estado  " + LQ.get(i).homomorfismo());
+     }
+     for (int j = 0; j < copiaLQdesendiente.size(); j++) {
+     System.out.println("estadoc  " + copiaLQdesendiente.get(j).homomorfismo());
+     }
+     for (int d = 0; d < t_disparados.size(); d++) {
+     System.out.println("transiciones disparadas-- " + t_disparados.get(d));
+     }
+    
+     }*/
 }
