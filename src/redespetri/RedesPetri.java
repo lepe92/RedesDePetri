@@ -655,6 +655,7 @@ public class RedesPetri {
         JLabel lbl = new JLabel();
         lbl.setIcon(icon);
         frame.add(lbl);
+        frame.setTitle("Grafo de cobertura");
         frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }

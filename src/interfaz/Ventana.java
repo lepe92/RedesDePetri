@@ -33,6 +33,7 @@ public class Ventana extends javax.swing.JFrame {
      */
     public Ventana() {
         initComponents();
+        this.setTitle("Propiedades de Redes de Petri");
         jTextArea1.setEditable(false);
     }
 
@@ -114,9 +115,9 @@ public class Ventana extends javax.swing.JFrame {
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         String archivo = getRed();
         
-       
-    }//GEN-LAST:event_jButton1ActionPerformed
 
+    }//GEN-LAST:event_jButton1ActionPerformed
+    
     public String getRed() {
         String cad = "";
         JFileChooser file = new JFileChooser();
@@ -125,7 +126,7 @@ public class Ventana extends javax.swing.JFrame {
         FileFilter filter = new FileNameExtensionFilter("PIPE file", "xml");
         file.addChoosableFileFilter(filter);
         File abre = file.getSelectedFile();
-
+        
         if (abre == null) {
             JOptionPane.showMessageDialog(this, "Por favor selecciona un archivo xml");
         } else {
@@ -140,30 +141,30 @@ public class Ventana extends javax.swing.JFrame {
         }
         return cad;
     }
-
-    public void iniciaPrograma(String archivo) throws IOException{
-     RedesPetri m = new RedesPetri(archivo);
-     jTextArea1.setText("");
-        String prep=m.getPropiedades();
+    
+    public void iniciaPrograma(String archivo) throws IOException {
+        RedesPetri m = new RedesPetri(archivo);
+        jTextArea1.setText("");
+        String prep = m.getPropiedades();
         jTextArea1.setText(prep);
-        int mi[][]= m.getMi();
-        String mit= m.getMit();
+        int mi[][] = m.getMi();
+        String mit = m.getMit();
         //JOptionPane.showMessageDialog(this, mit);
         
         JFrame frame = new JFrame();
         frame.setLayout(new FlowLayout());
-         frame.setSize(280,280);
+        frame.setSize(280, 280);
         JTextArea textArea = new JTextArea(20, 20);
         textArea.setText(mit);
         frame.add(textArea);
+        frame.setTitle("Matriz de Incidencia");
         frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-   
-        m=null;       //reiniciar el objeto la proxima vez
+        
+        m = null;       //reiniciar el objeto la proxima vez
 
     }
-    
-     
+
     /**
      * @param args the command line arguments
      */
