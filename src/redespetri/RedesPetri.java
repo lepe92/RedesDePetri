@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,24 +41,24 @@ public class RedesPetri {
 
     String grafo_file = "digraph G {";
     String matrizincidencia = "";
-    static boolean Repetitiva = false;
-    static boolean Conservativa = true;
-    static boolean Acotada = true;
-    static boolean LibreDeBloqueo = true;
-    static int mi[][], pre[][], pos[][];
+    boolean Repetitiva = false;
+    boolean Conservativa = true;
+    boolean Acotada = true;
+    boolean LibreDeBloqueo = true;
+    int mi[][], pre[][], pos[][];
 
-    static String propiedades = "";
+    String propiedades = "";
 
     int mark[];
 
-    static ArrayList<estado> p = new ArrayList();
-    static ArrayList<transicion> t = new ArrayList();
-    static ArrayList<String> t_disparados = new ArrayList<>();
-    static ArrayList<arco> a = new ArrayList();
-    static ArrayList<Nodo> LP = new ArrayList();//lista de nodos que se van formando, pendientes
-    static ArrayList<Nodo> LQ = new ArrayList();//nodos ya procesados
-    static ArrayList<Nodo> copiaLQdesendiente = new ArrayList<>();//nodos ya procesados
-    static int time = 0;
+    ArrayList<estado> p = new ArrayList();
+    ArrayList<transicion> t = new ArrayList();
+    ArrayList<String> t_disparados = new ArrayList<>();
+    ArrayList<arco> a = new ArrayList();
+    ArrayList<Nodo> LP = new ArrayList();//lista de nodos que se van formando, pendientes
+    ArrayList<Nodo> LQ = new ArrayList();//nodos ya procesados
+    ArrayList<Nodo> copiaLQdescendiente = new ArrayList<>();//nodos ya procesados
+    int time = 0;
 
     public String getPropiedades() {
         return propiedades;
@@ -69,7 +70,7 @@ public class RedesPetri {
         //eliminar comentario para poder realizar las pruebas
         primerMarcado();
 
-        ArrayList<Nodo> LQt = computeGt();
+       // ArrayList<Nodo> LQt = computeGt();
 
         //System.out.println(LQ.size());
         ArrayList<int[]> inva = CalculaPInvariantes(mi);
@@ -111,11 +112,7 @@ public class RedesPetri {
         if (ctaRepetitiva == t.size()) {
             Repetitiva = true;
         }
-        if (Acotada) {
-            propiedades += "Acotada" + "\n";
-        } else {
-            propiedades += "No Acotada" + "\n";
-        }
+       
         LibreDeBloqueo = !esLibreDeBloqueo();
         if (LibreDeBloqueo) {
             propiedades += "Libre de bloqueo" + "\n";
@@ -129,13 +126,18 @@ public class RedesPetri {
         } else {
             propiedades += "No es conservativa" + "\n";
         }
+         if (Acotada) {
+            propiedades += "Acotada" + "\n";
+        } else {
+            propiedades += "No Acotada" + "\n";
+        }
         if (Repetitiva) {
             propiedades += "Si es repetitiva" + "\n";
         } else {
             propiedades += "No es repetitiva" + "\n";
         }
+        esReversible();
         esViva();
-
     }
 
     public String getMit() {
@@ -473,7 +475,7 @@ public class RedesPetri {
                 }
             }
             if (mayoriza == n.length) {
-                Acotada = false;
+                //Acotada = false;
                 for (int i = 0; i < n.length; i++) {
                     if (m[i] > n[i]) {
                         m[i] = -1;
@@ -508,7 +510,7 @@ public class RedesPetri {
         return null;
     }
 
-    public static boolean esLibreDeBloqueo() {
+    public boolean esLibreDeBloqueo() {
         boolean deadlock = false;
 
         for (Nodo n : LQ) { //Checamos si hay algún nodo terminal en el arbol de covertura.
@@ -523,12 +525,13 @@ public class RedesPetri {
         return deadlock;
     }
 
-    public static void esEstrictamenteConservativa() {
+    public void esEstrictamenteConservativa() {
         int minit = LQ.get(0).suma;
 
         for (Nodo n : LQ) { //Checamos si hay algún nodo terminal en el arbol de covertura.
             if (n.tieneW) {
                 Conservativa = false;
+                Acotada= false;
             } else if (!(n.suma == minit)) {
                 Conservativa = false;
             }
@@ -612,14 +615,14 @@ public class RedesPetri {
 
             rt.exec(cmd);
 
-             timera.start();
+            timera.start();
 
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
 
-    ActionListener actListner = new ActionListener(){
+    ActionListener actListner = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
             try {
@@ -628,14 +631,12 @@ public class RedesPetri {
             } catch (IOException ex) {
                 Logger.getLogger(RedesPetri.class.getName()).log(Level.SEVERE, null, ex);
             }
-           // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
     };
     Timer timera = new Timer(1000, actListner);
-   
 
-
-public void DisplayImage() throws IOException {
+    public void DisplayImage() throws IOException {
         BufferedImage img = ImageIO.read(new File("grafo.png"));
         ImageIcon icon = new ImageIcon(img);
         JFrame frame = new JFrame();
@@ -657,8 +658,186 @@ public void DisplayImage() throws IOException {
         frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
+    
+     public ArrayList CalculaTInvariantes(int[][] mi) {
+        ArrayList<int[]> invariantsTemp = new ArrayList();//se usa para iterar
+        ArrayList<int[]> invariants = new ArrayList();//devuelve t o p -invariantes
 
-    public static ArrayList CalculaTInvariantes(int[][] mi) {
+        //generar lista de vectores para poder iterar
+        for (int i = 0; i < mi.length; i++) {
+            int[] temp = new int[mi.length + p.size()];
+            temp[i] = 1;
+            for (int j = 0; j < p.size(); j++) {
+                temp[mi.length + j] = mi[i][j];
+            }
+            invariantsTemp.add(temp);
+        }
+/////////////////////////////////
+        int cont = 0;
+        int multiploActual = 1;
+        int multiploTemp = 1;
+        int filaTemp[] = new int[mi.length + p.size()];
+        int filaActual[] = new int[mi.length + p.size()];
+        int filasAeliminar[]=new int[invariantsTemp.size()*invariantsTemp.size()];
+        Arrays.fill(filasAeliminar, 0);
+
+        for (int columna = mi.length; columna < mi.length + p.size(); columna++) {
+            for (int tmpo = 0 ; tmpo < invariantsTemp.size() ; tmpo++) {
+                filaTemp = invariantsTemp.get(tmpo);
+                for (int k = 0; k < p.size(); k++) {
+                    if (filaTemp[mi.length + k] == 0) {
+                        cont++;
+                    }
+                }
+                if (cont == p.size()) {
+                    invariants.add(invariantsTemp.remove(tmpo));
+                }
+                cont = 0;
+            }
+            for (int fila = 0; fila < invariantsTemp.size(); fila++) {
+                filaActual = invariantsTemp.get(fila);
+                if (filaActual[columna] != 0) {
+                    for (int i = fila + 1; i < invariantsTemp.size(); i++) {
+                        filaTemp = invariantsTemp.get(i);
+                        
+                        if (filaActual[columna] > 0 && filaTemp[columna] < 0) {
+                            if (filaActual[columna] % filaTemp[columna] == 0) {
+                                multiploTemp = filaActual[columna] / filaTemp[columna];
+                                if (multiploTemp < 0) {
+                                    multiploTemp = multiploTemp * (-1);
+                                }
+                                int mt1[]= sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                invariantsTemp.add(mt1);
+                                filasAeliminar[fila]=1;
+                                filasAeliminar[i]=1;
+                            }
+                           
+                        } else if (filaActual[columna] < 0 && filaTemp[columna] > 0) {
+                            if (filaTemp[columna] % filaActual[columna] == 0) {
+                                multiploActual = filaTemp[columna] / filaActual[columna];
+                                if (multiploActual < 0) {
+                                    multiploActual = multiploActual * (-1);
+                                }
+                                int mt1[]= sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                invariantsTemp.add(mt1);
+                                filasAeliminar[fila]=1;
+                                filasAeliminar[i]=1;
+                            }
+                            
+                        }
+                        multiploActual = 1;
+                        multiploTemp = 1;
+                    }
+                }
+            }
+            //eliminar las filas utilizadas
+            for (int x = filasAeliminar.length-1 ; x >=0; x--) {
+                if(filasAeliminar[x]==1){
+                    invariantsTemp.remove(x);
+                }
+            }
+            Arrays.fill(filasAeliminar, 0);
+            //eliminar las filas diferentes de cero que no pudiero ser quitadas
+            for (int y = 0 ; y< invariantsTemp.size(); y++) {
+                filaTemp = invariantsTemp.get(y);
+                if(filaTemp[columna]!=0){
+                    invariantsTemp.remove(y);
+                }
+            }
+        }//fin del while
+        return invariants;
+    }
+
+    public ArrayList CalculaPInvariantes(int[][] mi) {
+        ArrayList<int[]> invariantsTemp = new ArrayList();//se usa para iterar
+        ArrayList<int[]> invariants = new ArrayList();//devuelve t o p -invariantes
+
+        //generar lista de vectores para poder iterar
+        for (int i = 0; i < mi.length; i++) {
+            int[] temp = new int[mi.length + t.size()];
+            temp[i] = 1;
+            for (int j = 0; j < t.size(); j++) {
+                temp[mi.length + j] = mi[i][j];
+            }
+            invariantsTemp.add(temp);
+        }
+/////////////////////////////////
+        int cont = 0;
+        int multiploActual = 1;
+        int multiploTemp = 1;
+        int filaTemp[] = new int[mi.length + t.size()];
+        int filaActual[] = new int[mi.length + t.size()];
+        int filasAeliminar[]=new int[invariantsTemp.size()*invariantsTemp.size()];
+        Arrays.fill(filasAeliminar, 0);
+
+        for (int columna = mi.length; columna < mi.length + t.size(); columna++) {
+            for (int tmpo = 0 ; tmpo < invariantsTemp.size() ; tmpo++) {
+                filaTemp = invariantsTemp.get(tmpo);
+                for (int k = 0; k < t.size(); k++) {
+                    if (filaTemp[mi.length + k] == 0) {
+                        cont++;
+                    }
+                }
+                if (cont == t.size()) {
+                    invariants.add(invariantsTemp.remove(tmpo));
+                }
+                cont = 0;
+            }
+            for (int fila = 0; fila < invariantsTemp.size(); fila++) {
+                filaActual = invariantsTemp.get(fila);
+                if (filaActual[columna] != 0) {
+                    for (int i = fila + 1; i < invariantsTemp.size(); i++) {
+                        filaTemp = invariantsTemp.get(i);
+                        
+                        if (filaActual[columna] > 0 && filaTemp[columna] < 0) {
+                            if (filaActual[columna] % filaTemp[columna] == 0) {
+                                multiploTemp = filaActual[columna] / filaTemp[columna];
+                                if (multiploTemp < 0) {
+                                    multiploTemp = multiploTemp * (-1);
+                                }
+                                int mt1[]= sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                invariantsTemp.add(mt1);
+                                filasAeliminar[fila]=1;
+                                filasAeliminar[i]=1;
+                            }
+                           
+                        } else if (filaActual[columna] < 0 && filaTemp[columna] > 0) {
+                            if (filaTemp[columna] % filaActual[columna] == 0) {
+                                multiploActual = filaTemp[columna] / filaActual[columna];
+                                if (multiploActual < 0) {
+                                    multiploActual = multiploActual * (-1);
+                                }
+                                int mt1[]= sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                invariantsTemp.add(mt1);
+                                filasAeliminar[fila]=1;
+                                filasAeliminar[i]=1;
+                            }
+                           
+                        }
+                        multiploActual = 1;
+                        multiploTemp = 1;
+                    }
+                }
+            }
+            //eliminar las filas utilizadas
+            for (int x = filasAeliminar.length-1 ; x >=0; x--) {
+                if(filasAeliminar[x]==1){
+                    invariantsTemp.remove(x);
+                }
+            }
+            Arrays.fill(filasAeliminar, 0);
+            //eliminar las filas diferentes de cero que no pudiero ser quitadas
+            for (int y = 0 ; y< invariantsTemp.size(); y++) {
+                filaTemp = invariantsTemp.get(y);
+                if(filaTemp[columna]!=0){
+                    invariantsTemp.remove(y);
+                }
+            }
+        }//fin del while
+        return invariants;
+    }
+/*
+    public ArrayList CalculaTInvariantes(int[][] mi) {
         ArrayList<int[]> invariantsTemp = new ArrayList();//se usa para iterar
         ArrayList<int[]> invariants = new ArrayList();//devuelve t o p -invariantes
 
@@ -710,7 +889,7 @@ public void DisplayImage() throws IOException {
                              }
                              if(c==t.size()){
                              invariants.add(mt1);
-                             }else{*/
+                             }else{
                             invariantsTemp.add(mt1);//}
                         }
 
@@ -738,7 +917,7 @@ public void DisplayImage() throws IOException {
         return invariants;
     }
 
-    public static ArrayList CalculaPInvariantes(int[][] mi) {
+    public ArrayList CalculaPInvariantes(int[][] mi) {
         ArrayList<int[]> invariantsTemp = new ArrayList();//se usa para iterar
         ArrayList<int[]> invariants = new ArrayList();//devuelve t o p -invariantes
 
@@ -790,7 +969,7 @@ public void DisplayImage() throws IOException {
                              }
                              if(c==t.size()){
                              invariants.add(mt1);
-                             }else{*/
+                             }else{
                             invariantsTemp.add(mt1);//}
                         }
 
@@ -817,8 +996,16 @@ public void DisplayImage() throws IOException {
         }//fin del while
         return invariants;
     }
-
-    public static int[] sumaVector(int[] m, int n[]) {
+*/
+   public static int[] sumaVector(int multiploM, int[] m, int multiploN, int n[]) {
+        int z[] = new int[m.length];
+        for (int i = 0; i < m.length; i++) {
+            z[i] = multiploM * m[i] + multiploN * n[i];
+        }
+        return z;
+    }  
+    /*
+    public int[] sumaVector(int[] m, int n[]) {
         int z[] = new int[m.length];
         int sum = 0;
         for (int i = 0; i < m.length; i++) {
@@ -832,8 +1019,8 @@ public void DisplayImage() throws IOException {
         }
         return z;
     }
-
-    public static int[][] miTranspuesta() {
+*/
+    public int[][] miTranspuesta() {
         int mtran[][] = new int[t.size()][p.size()];
         for (int i = 0; i < p.size(); i++) {
             for (int j = 0; j < t.size(); j++) {
@@ -843,7 +1030,7 @@ public void DisplayImage() throws IOException {
         return mtran;
     }
 
-    public static ArrayList<Nodo> computeGt() {
+    public ArrayList<Nodo> computeGt() {
         ArrayList<Nodo> LQt = new ArrayList<Nodo>();
         for (Nodo n : LQ) { //Para crear la lista transpuesta.
             LQt.add(new Nodo(n.marcado, null, n.tranDisparada));
@@ -862,7 +1049,7 @@ public void DisplayImage() throws IOException {
         return LQt;
     }
 
-    public static Nodo getNodoT(int[] marcado, ArrayList<Nodo> LQt) {
+    public Nodo getNodoT(int[] marcado, ArrayList<Nodo> LQt) {
         Nodo aux = null;
         for (Nodo nodo : LQt) {
             if (nodo.marcado == marcado) {
@@ -872,7 +1059,7 @@ public void DisplayImage() throws IOException {
         return aux;
     }
 
-    public static int DFS(ArrayList<Nodo> G, Nodo u) {
+    public int DFS(ArrayList<Nodo> G, Nodo u) {
         time = 0;
         for (Nodo nodo : G) {
             nodo.padre = null;
@@ -887,7 +1074,7 @@ public void DisplayImage() throws IOException {
         return 0;
     }
 
-    public static int DFS_Visit(Nodo nodoTemp) {
+    public int DFS_Visit(Nodo nodoTemp) {
         String trans = "";
         time = time + 1;
         nodoTemp.tiempoInicial = time;
@@ -901,18 +1088,18 @@ public void DisplayImage() throws IOException {
         nodoTemp.color = "BLACK";
         time = time + 1;
         nodoTemp.tiempoFinal = time;
-        copiaLQdesendiente.add(nodoTemp);
+        copiaLQdescendiente.add(nodoTemp);
 
         return 0;
     }
 
-    public static void esViva() {
+   /* public void esViva() {
         //copiaLQ = new ArrayList<>(LQ);
         //DFS(copiaLQ, copiaLQ.get(0));
         ArrayList<Nodo> G_transpuesta = computeGt();
         Nodo nodoInicialGt = getNodoT(LQ.get(0).marcado, G_transpuesta);
         DFS(G_transpuesta, nodoInicialGt);
-        if (copiaLQdesendiente.size() == LQ.size()) {
+        if (copiaLQdescendiente.size() == LQ.size()) {
             propiedades += "Es reversible\n";
             if (t_disparados.size() == t.size()) {
                 propiedades += "Es viva\n";
@@ -922,8 +1109,50 @@ public void DisplayImage() throws IOException {
         } else {
             propiedades += "No es reversible y no es viva\n";
         }
+    }*/
+    
+    public void esReversible() {
+        //copiaLQ = new ArrayList<>(LQ);
+        //DFS(copiaLQ, copiaLQ.get(0));
+        ArrayList<Nodo> G_transpuesta = computeGt();
+        Nodo nodoInicialGt = getNodoT(LQ.get(0).marcado, G_transpuesta);
+        DFS(G_transpuesta, nodoInicialGt);
+        if (copiaLQdescendiente.size() == LQ.size() && numeroTenTinvariant() == t_disparados.size()) {
+            propiedades +="Es reversible\n";
+        } else {
+            propiedades +="No es reversible\n";
+        }
     }
 
+    public void esViva() {
+        if (copiaLQdescendiente.size() == LQ.size() && t_disparados.size() == t.size()) {
+           propiedades +="Es viva\n";
+        } else {
+            propiedades +="No es viva\n";
+        }
+    }
+
+    public int numeroTenTinvariant() {
+        int transi[][] = miTranspuesta();
+        ArrayList<int[]> tinva = CalculaTInvariantes(transi);
+        int sumTinv[] = new int[t.size()];
+        int numTenTinv = 0;
+
+        for (int[] tinv : tinva) {
+            for (int i = 0; i < tinv.length; i++) {
+                if (tinv[i] > 0) {
+                    sumTinv[i] += tinv[i];
+                }
+            }
+        }
+        for (int j = 0; j < sumTinv.length; j++) {
+            if (sumTinv[j] > 0) {
+                numTenTinv++;
+            }
+        }
+        return numTenTinv;
+    }
+    
     /**
      * @param args the command line arguments
      */
