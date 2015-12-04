@@ -41,7 +41,7 @@ public class RedesPetri {
 
     String grafo_file = "digraph G {";
     String matrizincidencia = "";
-    boolean Repetitiva = false;
+    boolean Repetitiva = true;
     boolean Conservativa = true;
     boolean Acotada = true;
     boolean LibreDeBloqueo = true;
@@ -57,7 +57,8 @@ public class RedesPetri {
     ArrayList<arco> a = new ArrayList();
     ArrayList<Nodo> LP = new ArrayList();//lista de nodos que se van formando, pendientes
     ArrayList<Nodo> LQ = new ArrayList();//nodos ya procesados
-    ArrayList<Nodo> copiaLQdescendiente = new ArrayList<>();//nodos ya procesados
+    static ArrayList<ArrayList<Nodo>> copiaLQdescendiente = new ArrayList<>();//nodos ya procesados copia
+    ArrayList<String> tInCFC = new ArrayList<>();
     int time = 0;
 
     public String getPropiedades() {
@@ -94,23 +95,22 @@ public class RedesPetri {
         System.out.println("Calculo de t invariantes");
         ArrayList<int[]> tinva = CalculaTInvariantes(transi);
         System.out.println("t-invariantes");
-        int ctaRepetitiva = 0;
+      int []ctaRepetitiva = new int[t.size()];
         if (!tinva.isEmpty()) {
             for (int i = 0; i < tinva.size(); i++) {
                 int mtem[] = tinva.get(i);
                 for (int j = 0; j < t.size(); j++) {
                     System.out.print(mtem[j] + " ");
-                    if (mtem[j] == 1) {
-                        ctaRepetitiva++;
-                    }
+                    ctaRepetitiva[j]+=mtem[j];
                 }
                 System.out.println("");
             }
         } else {
             System.out.println("No se obtuvieron t-invariantes");
         }
-        if (ctaRepetitiva == t.size()) {
-            Repetitiva = true;
+        for(int i=0; i<ctaRepetitiva.length;i++){
+            if(ctaRepetitiva[i]==0)
+                Repetitiva=false;
         }
        
         LibreDeBloqueo = !esLibreDeBloqueo();
@@ -424,8 +424,10 @@ public class RedesPetri {
 
                     LP.add(temp);
 
-                    if (t_disparados.contains(temp.tranDisparada) == false) {
-                        t_disparados.add(temp.tranDisparada);
+                  for (String t : temp.tranDisparada) {
+                        if (t_disparados.contains(t) == false) {
+                            t_disparados.add(t);
+                        }
                     }
                     //anadimos a grafo_file para el archivo node1 -> node2 [label="linea1"];
                     grafo_file += padre.homomorfismo() + " -> " + temp.homomorfismo() + "[label=\"" + temp.tranDisparada + "\"];";
@@ -433,12 +435,26 @@ public class RedesPetri {
                 } else {
 
                     if (!(isinQ(temp) == null)) { //Está en Q
-                        padre.hijos.add(isinQ(temp));
+                        //padre.hijos.add(isinQ(temp));
+                        Nodo n = isInHijos(padre, temp);
+                        if (n == null) {
+                            padre.hijos.add(isinQ(temp));
+                        } else {
+                            n.addTrans(t.get(j).name);
+                        }
                     } else { //Está en P.
-                        padre.hijos.add(isinP(temp));
+//                        padre.hijos.add(isinP(temp));
+                        Nodo n = isInHijos(padre, temp);
+                        if (n == null) {
+                            padre.hijos.add(isinP(temp));
+                        } else {
+                            n.addTrans(t.get(j).name);
+                        }
                     }
-                    if (t_disparados.contains(temp.tranDisparada) == false) {
-                        t_disparados.add(temp.tranDisparada);
+                    for (String t : temp.tranDisparada) {
+                        if (t_disparados.contains(t) == false) {
+                            t_disparados.add(t);
+                        }
                     }
                     System.out.println("Ya existe");
                     grafo_file += padre.homomorfismo() + " -> " + temp.homomorfismo() + "[label=\"" + temp.tranDisparada + "\"];";
@@ -458,6 +474,15 @@ public class RedesPetri {
 
     }
 
+    public Nodo isInHijos(Nodo padre, Nodo nodoabuscar) {
+        for (Nodo h : padre.hijos) {
+            if (nodoabuscar.homomorfismo().equals(h.homomorfismo())) {
+                return h;
+            }
+        }
+        return null;
+    }
+    
     public void mayoriza(Nodo x) {
         Nodo temp = x.padre;
         boolean repetido = false;
@@ -660,7 +685,16 @@ public class RedesPetri {
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
     
-     public ArrayList CalculaTInvariantes(int[][] mi) {
+    public void imprimirLista(ArrayList<int[]> lista) {
+        for (int[] actualFila : lista) {
+            for (int j = 0; j < actualFila.length; j++) {
+                System.out.print(actualFila[j] + "   ");
+            }
+            System.out.print("\n");
+        }
+    }
+    
+    public  ArrayList CalculaTInvariantes(int[][] mi) {
         ArrayList<int[]> invariantsTemp = new ArrayList();//se usa para iterar
         ArrayList<int[]> invariants = new ArrayList();//devuelve t o p -invariantes
 
@@ -679,11 +713,12 @@ public class RedesPetri {
         int multiploTemp = 1;
         int filaTemp[] = new int[mi.length + p.size()];
         int filaActual[] = new int[mi.length + p.size()];
-        int filasAeliminar[]=new int[invariantsTemp.size()*invariantsTemp.size()];
+        int filasAeliminar[] = new int[invariantsTemp.size() * invariantsTemp.size()];
         Arrays.fill(filasAeliminar, 0);
 
+        //imprimirLista(invariantsTemp);
         for (int columna = mi.length; columna < mi.length + p.size(); columna++) {
-            for (int tmpo = 0 ; tmpo < invariantsTemp.size() ; tmpo++) {
+            for (int tmpo = 0; tmpo < invariantsTemp.size(); tmpo++) {
                 filaTemp = invariantsTemp.get(tmpo);
                 for (int k = 0; k < p.size(); k++) {
                     if (filaTemp[mi.length + k] == 0) {
@@ -700,56 +735,102 @@ public class RedesPetri {
                 if (filaActual[columna] != 0) {
                     for (int i = fila + 1; i < invariantsTemp.size(); i++) {
                         filaTemp = invariantsTemp.get(i);
-                        
+
                         if (filaActual[columna] > 0 && filaTemp[columna] < 0) {
                             if (filaActual[columna] % filaTemp[columna] == 0) {
                                 multiploTemp = filaActual[columna] / filaTemp[columna];
                                 if (multiploTemp < 0) {
                                     multiploTemp = multiploTemp * (-1);
                                 }
-                                int mt1[]= sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                int mt1[] = sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
                                 invariantsTemp.add(mt1);
-                                filasAeliminar[fila]=1;
-                                filasAeliminar[i]=1;
+                                filasAeliminar[fila] = 1;
+                                filasAeliminar[i] = 1;
+                            } else {
+                                if (filaActual[columna] < 0) {
+                                    multiploTemp = filaActual[columna] * (-1);
+                                    multiploActual = filaTemp[columna];
+                                    int mt1[] = sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                    invariantsTemp.add(mt1);
+                                    filasAeliminar[fila] = 1;
+                                    filasAeliminar[i] = 1;
+                                } else {
+                                    multiploTemp = filaActual[columna];
+                                    multiploActual = filaTemp[columna] * (-1);
+                                    int mt1[] = sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                    invariantsTemp.add(mt1);
+                                    filasAeliminar[fila] = 1;
+                                    filasAeliminar[i] = 1;
+                                }
                             }
-                           
                         } else if (filaActual[columna] < 0 && filaTemp[columna] > 0) {
                             if (filaTemp[columna] % filaActual[columna] == 0) {
                                 multiploActual = filaTemp[columna] / filaActual[columna];
                                 if (multiploActual < 0) {
                                     multiploActual = multiploActual * (-1);
                                 }
-                                int mt1[]= sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                int mt1[] = sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
                                 invariantsTemp.add(mt1);
-                                filasAeliminar[fila]=1;
-                                filasAeliminar[i]=1;
+                                filasAeliminar[fila] = 1;
+                                filasAeliminar[i] = 1;
+                            } else {
+                                if (filaActual[columna] < 0) {
+                                    multiploTemp = filaActual[columna] * (-1);
+                                    multiploActual = filaTemp[columna];
+                                    int mt1[] = sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                    invariantsTemp.add(mt1);
+                                    filasAeliminar[fila] = 1;
+                                    filasAeliminar[i] = 1;
+                                } else {
+                                    multiploTemp = filaActual[columna];
+                                    multiploActual = filaTemp[columna] * (-1);
+                                    int mt1[] = sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                    invariantsTemp.add(mt1);
+                                    filasAeliminar[fila] = 1;
+                                    filasAeliminar[i] = 1;
+                                }
                             }
-                            
                         }
                         multiploActual = 1;
                         multiploTemp = 1;
                     }
                 }
             }
+            //System.out.print("creando las filas de la suma\n");
+            //imprimirLista(invariantsTemp);
             //eliminar las filas utilizadas
-            for (int x = filasAeliminar.length-1 ; x >=0; x--) {
-                if(filasAeliminar[x]==1){
+            for (int x = filasAeliminar.length - 1; x >= 0; x--) {
+                if (filasAeliminar[x] == 1) {
                     invariantsTemp.remove(x);
                 }
             }
             Arrays.fill(filasAeliminar, 0);
             //eliminar las filas diferentes de cero que no pudiero ser quitadas
-            for (int y = 0 ; y< invariantsTemp.size(); y++) {
+            //System.out.print("eliminando las filas usadas....\n");
+            //imprimirLista(invariantsTemp);
+            for (int y = invariantsTemp.size() - 1; y >= 0; y--) {
                 filaTemp = invariantsTemp.get(y);
-                if(filaTemp[columna]!=0){
+                if (filaTemp[columna] != 0) {
                     invariantsTemp.remove(y);
                 }
+            }
+            for (int tmpo = 0; tmpo < invariantsTemp.size(); tmpo++) {
+                filaTemp = invariantsTemp.get(tmpo);
+                for (int k = 0; k < p.size(); k++) {
+                    if (filaTemp[mi.length + k] == 0) {
+                        cont++;
+                    }
+                }
+                if (cont == p.size()) {
+                    invariants.add(invariantsTemp.remove(tmpo));
+                }
+                cont = 0;
             }
         }//fin del while
         return invariants;
     }
 
-    public ArrayList CalculaPInvariantes(int[][] mi) {
+    public  ArrayList CalculaPInvariantes(int[][] mi) {
         ArrayList<int[]> invariantsTemp = new ArrayList();//se usa para iterar
         ArrayList<int[]> invariants = new ArrayList();//devuelve t o p -invariantes
 
@@ -768,11 +849,11 @@ public class RedesPetri {
         int multiploTemp = 1;
         int filaTemp[] = new int[mi.length + t.size()];
         int filaActual[] = new int[mi.length + t.size()];
-        int filasAeliminar[]=new int[invariantsTemp.size()*invariantsTemp.size()];
+        int filasAeliminar[] = new int[invariantsTemp.size() * invariantsTemp.size()];
         Arrays.fill(filasAeliminar, 0);
 
         for (int columna = mi.length; columna < mi.length + t.size(); columna++) {
-            for (int tmpo = 0 ; tmpo < invariantsTemp.size() ; tmpo++) {
+            for (int tmpo = 0; tmpo < invariantsTemp.size(); tmpo++) {
                 filaTemp = invariantsTemp.get(tmpo);
                 for (int k = 0; k < t.size(); k++) {
                     if (filaTemp[mi.length + k] == 0) {
@@ -789,31 +870,60 @@ public class RedesPetri {
                 if (filaActual[columna] != 0) {
                     for (int i = fila + 1; i < invariantsTemp.size(); i++) {
                         filaTemp = invariantsTemp.get(i);
-                        
                         if (filaActual[columna] > 0 && filaTemp[columna] < 0) {
                             if (filaActual[columna] % filaTemp[columna] == 0) {
                                 multiploTemp = filaActual[columna] / filaTemp[columna];
                                 if (multiploTemp < 0) {
                                     multiploTemp = multiploTemp * (-1);
                                 }
-                                int mt1[]= sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                int mt1[] = sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
                                 invariantsTemp.add(mt1);
-                                filasAeliminar[fila]=1;
-                                filasAeliminar[i]=1;
+                                filasAeliminar[fila] = 1;
+                                filasAeliminar[i] = 1;
+                            } else {
+                                if (filaActual[columna] < 0) {
+                                    multiploTemp = filaActual[columna] * (-1);
+                                    multiploActual = filaTemp[columna];
+                                    int mt1[] = sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                    invariantsTemp.add(mt1);
+                                    filasAeliminar[fila] = 1;
+                                    filasAeliminar[i] = 1;
+                                } else {
+                                    multiploTemp = filaActual[columna];
+                                    multiploActual = filaTemp[columna] * (-1);
+                                    int mt1[] = sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                    invariantsTemp.add(mt1);
+                                    filasAeliminar[fila] = 1;
+                                    filasAeliminar[i] = 1;
+                                }
                             }
-                           
                         } else if (filaActual[columna] < 0 && filaTemp[columna] > 0) {
                             if (filaTemp[columna] % filaActual[columna] == 0) {
                                 multiploActual = filaTemp[columna] / filaActual[columna];
                                 if (multiploActual < 0) {
                                     multiploActual = multiploActual * (-1);
                                 }
-                                int mt1[]= sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                int mt1[] = sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
                                 invariantsTemp.add(mt1);
-                                filasAeliminar[fila]=1;
-                                filasAeliminar[i]=1;
+                                filasAeliminar[fila] = 1;
+                                filasAeliminar[i] = 1;
+                            } else {
+                                if (filaActual[columna] < 0) {
+                                    multiploTemp = filaActual[columna] * (-1);
+                                    multiploActual = filaTemp[columna];
+                                    int mt1[] = sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                    invariantsTemp.add(mt1);
+                                    filasAeliminar[fila] = 1;
+                                    filasAeliminar[i] = 1;
+                                } else {
+                                    multiploTemp = filaActual[columna];
+                                    multiploActual = filaTemp[columna] * (-1);
+                                    int mt1[] = sumaVector(multiploActual, filaActual, multiploTemp, filaTemp);
+                                    invariantsTemp.add(mt1);
+                                    filasAeliminar[fila] = 1;
+                                    filasAeliminar[i] = 1;
+                                }
                             }
-                           
                         }
                         multiploActual = 1;
                         multiploTemp = 1;
@@ -821,16 +931,16 @@ public class RedesPetri {
                 }
             }
             //eliminar las filas utilizadas
-            for (int x = filasAeliminar.length-1 ; x >=0; x--) {
-                if(filasAeliminar[x]==1){
+            for (int x = filasAeliminar.length - 1; x >= 0; x--) {
+                if (filasAeliminar[x] == 1) {
                     invariantsTemp.remove(x);
                 }
             }
             Arrays.fill(filasAeliminar, 0);
             //eliminar las filas diferentes de cero que no pudiero ser quitadas
-            for (int y = 0 ; y< invariantsTemp.size(); y++) {
+            for (int y = 0; y < invariantsTemp.size(); y++) {
                 filaTemp = invariantsTemp.get(y);
-                if(filaTemp[columna]!=0){
+                if (filaTemp[columna] != 0) {
                     invariantsTemp.remove(y);
                 }
             }
@@ -1031,25 +1141,118 @@ public class RedesPetri {
         return mtran;
     }
 
-    public ArrayList<Nodo> computeGt() {
+   public  ArrayList<Nodo> computeGt(ArrayList<Nodo> LQTiempos) {
         ArrayList<Nodo> LQt = new ArrayList<Nodo>();
-        for (Nodo n : LQ) { //Para crear la lista transpuesta.
+        ArrayList<Nodo> LQt2 = new ArrayList<Nodo>();
+        for (Nodo n : LQTiempos) { //Para crear la lista transpuesta.
             LQt.add(new Nodo(n.marcado, null, n.tranDisparada));
         }
 
-        for (Nodo nodo : LQ) {
+        for (Nodo nodo : LQTiempos) {
             for (Nodo hijo : nodo.hijos) {
-
                 Nodo temp = getNodoT(hijo.marcado, LQt);
                 temp.hijos.add(getNodoT(nodo.marcado, LQt));
-
             }
         }
 
-        System.out.println();
+        //aqui poner lo de acomodas los nodos de  lqt
         return LQt;
     }
 
+    public boolean esComFueCon() {
+        boolean CFC = false;
+        int transInCFC[] = new int[t.size()];
+        int AllCFC[] = new int[copiaLQdescendiente.size()];
+        boolean temp = true;
+        int iteradorListaCFC=-1;
+        ArrayList<Nodo> listaDeCFCallT = new ArrayList<>();
+        int indexListaCFC = -1;
+        String x="";
+        String y="";
+        
+        for (ArrayList<Nodo> listaCFC : copiaLQdescendiente) {
+            iteradorListaCFC++;
+            for (Nodo nodo : listaCFC) {
+                for (Nodo hijos : nodo.hijos) {
+                    for (String transi : hijos.tranDisparada) {
+                        if (transi != "Ninguna") {
+                            String c = transi.substring(1);
+                            int p = Integer.parseInt(c);
+                            transInCFC[p] = 1;
+//                            for (transicion transTmp: t) {
+//                                if (transTmp.name == transi){
+//                                    
+//                                    transInCFC[t.indexOf(transTmp)] = 1;
+//                                }
+//                            }
+                            
+                            
+                        }
+                    }
+                }
+            }
+            for (int z = 0; z < t.size(); z++) {
+                if (transInCFC[z] != 1) {
+                    temp = false;
+                }
+            }
+            if (temp == true) {
+                listaDeCFCallT = listaCFC;
+                AllCFC[iteradorListaCFC]=1;
+                indexListaCFC = iteradorListaCFC;
+            }
+            Arrays.fill(transInCFC, 0);
+            temp=true;
+        }
+        iteradorListaCFC = -1;
+        for(ArrayList<Nodo> listaCNFC: copiaLQdescendiente){
+            iteradorListaCFC++;
+            if(indexListaCFC != iteradorListaCFC){
+                for(Nodo iterandoN : listaCNFC){
+
+                    Nodo nodoAnalizando = getNodoT(iterandoN.marcado, LQ);
+
+                    for(int s = 0; s<listaDeCFCallT.size();s++){
+                        Nodo verMarcado = listaDeCFCallT.get(s);
+                        for(Nodo hijositer: nodoAnalizando.hijos ){
+                            y=verMarcado.homomorfismo();
+                            x=hijositer.homomorfismo();
+                            if(x.equals(y) && !listaDeCFCallT.contains(iterandoN) ){
+                                listaDeCFCallT.add(iterandoN);
+                                AllCFC[iteradorListaCFC]=1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        CFC=true;
+        for (int r = 0; r < copiaLQdescendiente.size(); r++) {
+            if (AllCFC[r] != 1) {
+                CFC = false;
+            }
+        }
+        return CFC;
+    }
+   
+    public ArrayList<Nodo> acomodar(ArrayList<Nodo> desordenada, ArrayList<Nodo> ordenada) {
+
+        ArrayList<Nodo> transAcomodada = new ArrayList<>();
+        ArrayList<Nodo> transAcomodadafinal = new ArrayList<>();
+        
+        for (int i = ordenada.size()-1; i >=0; i--) {
+            transAcomodada.add(ordenada.get(i));
+        }
+        
+        for (int i = 0; i < ordenada.size(); i++) {
+            transAcomodadafinal.add(getNodoT(transAcomodada.get(i).marcado, desordenada));
+        }
+
+        return transAcomodadafinal;
+
+    }
+
+    
     public Nodo getNodoT(int[] marcado, ArrayList<Nodo> LQt) {
         Nodo aux = null;
         for (Nodo nodo : LQt) {
@@ -1060,36 +1263,43 @@ public class RedesPetri {
         return aux;
     }
 
-    public int DFS(ArrayList<Nodo> G, Nodo u) {
+  public int DFS(ArrayList<Nodo> G, Nodo u) {
         time = 0;
+        tInCFC.clear();
+        int indiceCFC = 0;
+        copiaLQdescendiente.clear();
         for (Nodo nodo : G) {
             nodo.padre = null;
             nodo.color = "WHITE";
         }
-        //for(Nodo nodoTemp : copiaLQ){
-        //   if(nodoTemp.color.equals("WHITE"));{
-        int transDisp[];
-        DFS_Visit(u);
-        //   }
-        //}
+        for (Nodo nodoTemp : G) {
+            if ("WHITE".equals(nodoTemp.color)) {
+                tInCFC.add("cambio");
+                copiaLQdescendiente.add(new ArrayList<Nodo>());
+                DFS_Visit(G, nodoTemp, indiceCFC);
+                indiceCFC++;
+            }
+        }
+
         return 0;
     }
 
-    public int DFS_Visit(Nodo nodoTemp) {
+   public int DFS_Visit(ArrayList<Nodo> G, Nodo nodoTemp, int indiceCFCtmp) {
         String trans = "";
         time = time + 1;
         nodoTemp.tiempoInicial = time;
         nodoTemp.color = "GRAY";
         for (int h = 0; h < nodoTemp.hijos.size(); h++) {
             if (nodoTemp.hijos.get(h).color.equals("WHITE")) {
-                nodoTemp.padre = nodoTemp;
-                DFS_Visit(nodoTemp.hijos.get(h));
+                nodoTemp.hijos.get(h).padre = nodoTemp;
+                tInCFC.add(nodoTemp.homomorfismo());
+                DFS_Visit(G, nodoTemp.hijos.get(h), indiceCFCtmp);
             }
         }
         nodoTemp.color = "BLACK";
         time = time + 1;
         nodoTemp.tiempoFinal = time;
-        copiaLQdescendiente.add(nodoTemp);
+        copiaLQdescendiente.get(indiceCFCtmp).add(nodoTemp);
 
         return 0;
     }
@@ -1111,28 +1321,6 @@ public class RedesPetri {
             propiedades += "No es reversible y no es viva\n";
         }
     }*/
-    
-    public void esReversible() {
-        //copiaLQ = new ArrayList<>(LQ);
-        //DFS(copiaLQ, copiaLQ.get(0));
-        ArrayList<Nodo> G_transpuesta = computeGt();
-        Nodo nodoInicialGt = getNodoT(LQ.get(0).marcado, G_transpuesta);
-        DFS(G_transpuesta, nodoInicialGt);
-        if (copiaLQdescendiente.size() == LQ.size() && numeroTenTinvariant() == t_disparados.size()) {
-            propiedades +="Es reversible\n";
-        } else {
-            propiedades +="No es reversible\n";
-        }
-    }
-
-    public void esViva() {
-        if (copiaLQdescendiente.size() == LQ.size() && t_disparados.size() == t.size()) {
-           propiedades +="Es viva\n";
-        } else {
-            propiedades +="No es viva\n";
-        }
-    }
-
     public int numeroTenTinvariant() {
         int transi[][] = miTranspuesta();
         ArrayList<int[]> tinva = CalculaTInvariantes(transi);
@@ -1153,6 +1341,31 @@ public class RedesPetri {
         }
         return numTenTinv;
     }
+    
+   public void esReversible() {
+        ArrayList<Nodo> copiaLQ = new ArrayList<>(LQ);
+        DFS(copiaLQ, copiaLQ.get(0));
+        ArrayList<Nodo> G_transpuesta = computeGt(copiaLQdescendiente.get(0));
+        ArrayList<Nodo> G_transpuestaDesentiente= acomodar(G_transpuesta, copiaLQdescendiente.get(0));
+        System.out.print("segunfaaaa\n");
+
+        DFS(G_transpuestaDesentiente, G_transpuestaDesentiente.get(0));
+        if (copiaLQdescendiente.size() == 1 && numeroTenTinvariant() == t_disparados.size()) {
+            propiedades+="Es reversible\n";
+        } else {
+            propiedades+="No es reversible\n";
+        }
+    }
+
+    public  void esViva() {
+        if (esComFueCon()) {
+            propiedades+="Es viva\n";
+        } else {
+            propiedades+="No es viva\n";
+        }
+    }
+
+
     
     /**
      * @param args the command line arguments
