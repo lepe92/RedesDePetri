@@ -14,13 +14,13 @@ import java.util.ArrayList;
  */
 public class Nodo {
 
-    boolean tieneW = false;
+    boolean contieneW = false;
     int suma = 0;
     ArrayList<Nodo> hijos;
     int[] marcado;
     Nodo padre;
     // String tranDisparada;
-    ArrayList<String> tranDisparada = new ArrayList();
+    ArrayList<String> transicionDisparada = new ArrayList();
     boolean Terminal = false;
     boolean Duplicado = false;
     String color;
@@ -30,7 +30,7 @@ public class Nodo {
     public Nodo(int[] marcado, Nodo padre, String tran) {
         this.marcado = marcado;
         this.padre = padre;
-        tranDisparada.add(tran);
+        transicionDisparada.add(tran);
         hijos = new ArrayList();
         suma = sumarNodo();
         this.color = "WHITE";
@@ -42,7 +42,7 @@ public class Nodo {
     public Nodo(int[] marcado, Nodo padre, ArrayList trans) {
         this.marcado = marcado;
         this.padre = padre;
-        tranDisparada = trans;
+        transicionDisparada = trans;
         hijos = new ArrayList();
         suma = sumarNodo();
         this.color = "WHITE";
@@ -50,8 +50,8 @@ public class Nodo {
         this.tiempoFinal = 0;
     }
 
-    public void addTrans(String s) {
-        tranDisparada.add(s);
+    public void anadirTrans(String s) {
+        transicionDisparada.add(s);
     }
 
     public void setMarcado(int m[]) {
@@ -62,7 +62,7 @@ public class Nodo {
         suma = 0;
         for (int i = 0; i < marcado.length; i++) {
             if (marcado[i] == -1) {
-                tieneW = true;
+                contieneW = true;
             } else {
                 suma += marcado[i];
             }
@@ -75,10 +75,10 @@ public class Nodo {
         for (int i = 0; i < marcado.length; i++) {
             System.out.print(marcado[i] + " ");
         }
-        System.out.print("\n Transicion Disparada: " + tranDisparada + "\n");
+        System.out.print("\n Transicion Disparada: " + transicionDisparada + "\n");
     }
 
-    public String homomorfismo() {
+    public String marcadoACadena() {
         String cad = "";
         for (int i = 0; i < marcado.length; i++) {
             if (marcado[i] == -1) {

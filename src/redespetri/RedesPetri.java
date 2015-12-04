@@ -51,14 +51,14 @@ public class RedesPetri {
 
     int mark[];
 
-    ArrayList<estado> p = new ArrayList();
-    ArrayList<transicion> t = new ArrayList();
-    ArrayList<String> t_disparados = new ArrayList<>();
+    ArrayList<estado> P = new ArrayList();
+    ArrayList<transicion> T = new ArrayList();
+    ArrayList<String> transiciones_disparadas = new ArrayList<>();
     ArrayList<arco> a = new ArrayList();
     ArrayList<Nodo> LP = new ArrayList();//lista de nodos que se van formando, pendientes
     ArrayList<Nodo> LQ = new ArrayList();//nodos ya procesados
-    static ArrayList<ArrayList<Nodo>> copiaLQdescendiente = new ArrayList<>();//nodos ya procesados copia
-    ArrayList<String> tInCFC = new ArrayList<>();
+    static ArrayList<ArrayList<Nodo>> copiaLQ = new ArrayList<>();//nodos ya procesados copia
+    ArrayList<String> tEnFuertementeConexo = new ArrayList<>();//tInCFC
     int time = 0;
 
     public String getPropiedades() {
@@ -95,11 +95,11 @@ public class RedesPetri {
         System.out.println("Calculo de t invariantes");
         ArrayList<int[]> tinva = CalculaTInvariantes(transi);
         System.out.println("t-invariantes");
-      int []ctaRepetitiva = new int[t.size()];
+      int []ctaRepetitiva = new int[T.size()];
         if (!tinva.isEmpty()) {
             for (int i = 0; i < tinva.size(); i++) {
                 int mtem[] = tinva.get(i);
-                for (int j = 0; j < t.size(); j++) {
+                for (int j = 0; j < T.size(); j++) {
                     System.out.print(mtem[j] + " ");
                     ctaRepetitiva[j]+=mtem[j];
                 }
@@ -176,24 +176,24 @@ public class RedesPetri {
                     //  System.out.println("Marcado inicial : " + cad2[1]);
                     index2 = Integer.parseInt(eElement.getAttribute("id").substring(1, eElement.getAttribute("id").length()));
                     estado tempo = new estado(eElement.getAttribute("id"), Integer.parseInt(cad2[1]), index, index2);
-                    p.add(tempo);
+                    P.add(tempo);
                     index++;
                     //  System.out.println("Capacidad : " + eElement.getElementsByTagName("capacity").item(0).getTextContent());
                 }
             }
             //ordenar lista de p en base a index2
             ArrayList m = new ArrayList();
-            for (int in = 0; in < p.size(); in++) {
-                m.add(p.get(in).getIndex2());
+            for (int in = 0; in < P.size(); in++) {
+                m.add(P.get(in).getIndex2());
             }
             Collections.sort(m);
 
             //ya ordenados los indices se comparan para ordenar los valores de P
             ArrayList<estado> p2 = new ArrayList();
             for (int i = 0; i < m.size(); i++) {
-                for (int j = 0; j < p.size(); j++) {
-                    if (p.get(j).index2 == Integer.parseInt(m.get(i).toString())) {
-                        p2.add(p.get(j));
+                for (int j = 0; j < P.size(); j++) {
+                    if (P.get(j).index2 == Integer.parseInt(m.get(i).toString())) {
+                        p2.add(P.get(j));
 
                     }
                 }
@@ -201,7 +201,7 @@ public class RedesPetri {
                 //System.out.println(p2.get(i).nombre);
 
             }
-            p = p2;
+            P = p2;
             p2 = null;
 
             nList = doc.getElementsByTagName("transition");
@@ -216,24 +216,24 @@ public class RedesPetri {
                     //      System.out.println("Transición : " + eElement.getAttribute("id"));
                     index2 = Integer.parseInt(eElement.getAttribute("id").substring(1, eElement.getAttribute("id").length()));
                     transicion tempo = new transicion(eElement.getAttribute("id"), index, index2);
-                    t.add(tempo);
+                    T.add(tempo);
                     index++;
                 }
             }
             //ordenar t
             //ordenar lista de t en base a index2
             m = new ArrayList();
-            for (int in = 0; in < t.size(); in++) {
-                m.add(t.get(in).getIndex2());
+            for (int in = 0; in < T.size(); in++) {
+                m.add(T.get(in).getIndex2());
             }
             Collections.sort(m);
 
             //ya ordenados los indices se comparan para ordenar los valores de P
             ArrayList<transicion> t2 = new ArrayList();
             for (int i = 0; i < m.size(); i++) {
-                for (int j = 0; j < t.size(); j++) {
-                    if (t.get(j).index2 == Integer.parseInt(m.get(i).toString())) {
-                        t2.add(t.get(j));
+                for (int j = 0; j < T.size(); j++) {
+                    if (T.get(j).index2 == Integer.parseInt(m.get(i).toString())) {
+                        t2.add(T.get(j));
 
                     }
                 }
@@ -241,7 +241,7 @@ public class RedesPetri {
                 //System.out.println(t2.get(i).name);
 
             }
-            t = t2;
+            T = t2;
             t2 = null;
 
             nList = doc.getElementsByTagName("arc");
@@ -268,9 +268,9 @@ public class RedesPetri {
 
         //ordenar e indexar P
         //crear la matriz de incidencia
-        mi = new int[p.size()][t.size()];
-        pre = new int[p.size()][t.size()];
-        pos = new int[p.size()][t.size()];
+        mi = new int[P.size()][T.size()];
+        pre = new int[P.size()][T.size()];
+        pos = new int[P.size()][T.size()];
         //    System.out.println("tamaño de la matriz" + p.size() + " " + t.size());
 
         for (int i = 0; i < a.size(); i++) {//recorrer la lista de transiciones
@@ -285,13 +285,13 @@ public class RedesPetri {
             int ip, it;
 
             if (from.contains("P")) {
-                for (int k = 0; k < p.size(); k++) {
-                    if (p.get(k).nombre.equals(from)) {
+                for (int k = 0; k < P.size(); k++) {
+                    if (P.get(k).nombre.equals(from)) {
                         indicep = k;
                     }
                 }
-                for (int k = 0; k < t.size(); k++) {
-                    if (t.get(k).name.equals(to)) {
+                for (int k = 0; k < T.size(); k++) {
+                    if (T.get(k).name.equals(to)) {
                         indicet = k;
                     }
                 }
@@ -304,17 +304,17 @@ public class RedesPetri {
 
                 //          System.out.println(ip + " " + it);
                 //        System.out.println(value);
-                mi[p.get(indicep).index][t.get(indicet).index] -= value;
-                pre[p.get(indicep).index][t.get(indicet).index] += value;
+                mi[P.get(indicep).index][T.get(indicet).index] -= value;
+                pre[P.get(indicep).index][T.get(indicet).index] += value;
                 //System.out.print("indice"+p.get(indicep).index);
             } else {
-                for (int k = 0; k < p.size(); k++) {
-                    if (p.get(k).nombre.equals(to)) {
+                for (int k = 0; k < P.size(); k++) {
+                    if (P.get(k).nombre.equals(to)) {
                         indicep = k;
                     }
                 }
-                for (int k = 0; k < t.size(); k++) {
-                    if (t.get(k).name.equals(from)) {
+                for (int k = 0; k < T.size(); k++) {
+                    if (T.get(k).name.equals(from)) {
                         indicet = k;
                     }
                 }
@@ -327,24 +327,24 @@ public class RedesPetri {
 
                 //      System.out.println(it + " " + ip);
                 //     System.out.println(value);
-                mi[p.get(indicep).index][t.get(indicet).index] += value;
-                pos[p.get(indicep).index][t.get(indicet).index] += value;
+                mi[P.get(indicep).index][T.get(indicet).index] += value;
+                pos[P.get(indicep).index][T.get(indicet).index] += value;
             }
         }
 
         System.out.println("Matriz de incidencia");
         String cad = "   ";
 
-        for (int i = 0; i < t.size(); i++) {
-            cad += t.get(i).name + "|";
+        for (int i = 0; i < T.size(); i++) {
+            cad += T.get(i).name + "|";
         }
         System.out.println(cad);
 
         matrizincidencia += cad + "\n";
-        for (int i = 0; i < p.size(); i++) {
-            System.out.print(p.get(i).nombre + "|");
-            matrizincidencia += p.get(i).nombre + "|";
-            for (int j = 0; j < t.size(); j++) {
+        for (int i = 0; i < P.size(); i++) {
+            System.out.print(P.get(i).nombre + "|");
+            matrizincidencia += P.get(i).nombre + "|";
+            for (int j = 0; j < T.size(); j++) {
                 System.out.print(mi[i][j] + " |");
                 matrizincidencia += mi[i][j] + " |";
             }
@@ -354,14 +354,14 @@ public class RedesPetri {
 
         System.out.println("\nPRE");
         cad = "   ";
-        for (int i = 0; i < t.size(); i++) {
-            cad += t.get(i).name + "|";
+        for (int i = 0; i < T.size(); i++) {
+            cad += T.get(i).name + "|";
         }
         System.out.println(cad);
 
-        for (int i = 0; i < p.size(); i++) {
-            System.out.print(p.get(i).nombre + "|");
-            for (int j = 0; j < t.size(); j++) {
+        for (int i = 0; i < P.size(); i++) {
+            System.out.print(P.get(i).nombre + "|");
+            for (int j = 0; j < T.size(); j++) {
                 System.out.print(pre[i][j] + " |");
             }
             System.out.println();
@@ -369,14 +369,14 @@ public class RedesPetri {
 
         System.out.println("\nPOS");
         cad = "   ";
-        for (int i = 0; i < t.size(); i++) {
-            cad += t.get(i).name + "|";
+        for (int i = 0; i < T.size(); i++) {
+            cad += T.get(i).name + "|";
         }
         System.out.println(cad);
 
-        for (int i = 0; i < p.size(); i++) {
-            System.out.print(p.get(i).nombre + "|");
-            for (int j = 0; j < t.size(); j++) {
+        for (int i = 0; i < P.size(); i++) {
+            System.out.print(P.get(i).nombre + "|");
+            for (int j = 0; j < T.size(); j++) {
                 System.out.print(pos[i][j] + " |");
             }
             System.out.println();
@@ -385,29 +385,29 @@ public class RedesPetri {
     }
 
     public void marcadoInicial() {
-        mark = new int[p.size()];
+        mark = new int[P.size()];
         System.out.println("\nMarcado inicial");
-        for (int i = 0; i < p.size(); i++) {
-            mark[i] = p.get(i).marcado;
-            System.out.println(p.get(i).nombre + "|" + mark[i]);
+        for (int i = 0; i < P.size(); i++) {
+            mark[i] = P.get(i).marcado;
+            System.out.println(P.get(i).nombre + "|" + mark[i]);
         }
     }
 
     public void generarMarcados(Nodo padre) {
 
-        for (int j = 0; j < t.size(); j++) {
+        for (int j = 0; j < T.size(); j++) {
             int con = 0;
-            for (int i = 0; i < p.size(); i++) {
+            for (int i = 0; i < P.size(); i++) {
                 //modificado para marcado negativo de w
                 if (padre.marcado[i] >= pre[i][j] || padre.marcado[i] == -1) {//recordemos pre[p.size][t.size]
                     con++;
                 }
             }
             //System.out.println(con);
-            if (con == p.size()) {//si marcado mayoriza a pre se realiza el disparo del marcado
+            if (con == P.size()) {//si marcado mayoriza a pre se realiza el disparo del marcado
                 //System.out.println("Marcado generado");
-                int[] markTemp = new int[p.size()];
-                for (int i = 0; i < p.size(); i++) {
+                int[] markTemp = new int[P.size()];
+                for (int i = 0; i < P.size(); i++) {
                     if (padre.marcado[i] == -1) {
                         markTemp[i] = padre.marcado[i];
                     } else {
@@ -415,49 +415,49 @@ public class RedesPetri {
                     }
                 }
 
-                Nodo temp = new Nodo(markTemp, padre, t.get(j).name);
+                Nodo temp = new Nodo(markTemp, padre, T.get(j).name);
                 mayoriza(temp);
                 //verificar si ya existe
-                if (isinQ(temp) == null && isinP(temp) == null) {
+                if (estaEnQ(temp) == null && estaEnP(temp) == null) {
 
                     padre.hijos.add(temp);//añadir el hijo
 
                     LP.add(temp);
 
-                  for (String t : temp.tranDisparada) {
-                        if (t_disparados.contains(t) == false) {
-                            t_disparados.add(t);
+                  for (String t : temp.transicionDisparada) {
+                        if (transiciones_disparadas.contains(t) == false) {
+                            transiciones_disparadas.add(t);
                         }
                     }
                     //anadimos a grafo_file para el archivo node1 -> node2 [label="linea1"];
-                    grafo_file += padre.homomorfismo() + " -> " + temp.homomorfismo() + "[label=\"" + temp.tranDisparada + "\"];";
+                    grafo_file += padre.marcadoACadena() + " -> " + temp.marcadoACadena() + "[label=\"" + temp.transicionDisparada + "\"];";
 
                 } else {
 
-                    if (!(isinQ(temp) == null)) { //Está en Q
+                    if (!(estaEnQ(temp) == null)) { //Está en Q
                         //padre.hijos.add(isinQ(temp));
-                        Nodo n = isInHijos(padre, temp);
+                        Nodo n = estaEnHijos(padre, temp);
                         if (n == null) {
-                            padre.hijos.add(isinQ(temp));
+                            padre.hijos.add(estaEnQ(temp));
                         } else {
-                            n.addTrans(t.get(j).name);
+                            n.anadirTrans(T.get(j).name);
                         }
                     } else { //Está en P.
 //                        padre.hijos.add(isinP(temp));
-                        Nodo n = isInHijos(padre, temp);
+                        Nodo n = estaEnHijos(padre, temp);
                         if (n == null) {
-                            padre.hijos.add(isinP(temp));
+                            padre.hijos.add(estaEnP(temp));
                         } else {
-                            n.addTrans(t.get(j).name);
+                            n.anadirTrans(T.get(j).name);
                         }
                     }
-                    for (String t : temp.tranDisparada) {
-                        if (t_disparados.contains(t) == false) {
-                            t_disparados.add(t);
+                    for (String t : temp.transicionDisparada) {
+                        if (transiciones_disparadas.contains(t) == false) {
+                            transiciones_disparadas.add(t);
                         }
                     }
                     System.out.println("Ya existe");
-                    grafo_file += padre.homomorfismo() + " -> " + temp.homomorfismo() + "[label=\"" + temp.tranDisparada + "\"];";
+                    grafo_file += padre.marcadoACadena() + " -> " + temp.marcadoACadena() + "[label=\"" + temp.transicionDisparada + "\"];";
                 }
             } else {
                 padre.Terminal = true;
@@ -474,9 +474,9 @@ public class RedesPetri {
 
     }
 
-    public Nodo isInHijos(Nodo padre, Nodo nodoabuscar) {
+    public Nodo estaEnHijos(Nodo padre, Nodo hijo) {
         for (Nodo h : padre.hijos) {
-            if (nodoabuscar.homomorfismo().equals(h.homomorfismo())) {
+            if (hijo.marcadoACadena().equals(h.marcadoACadena())) {
                 return h;
             }
         }
@@ -508,7 +508,7 @@ public class RedesPetri {
                 }
                 x.setMarcado(m);
                 for (Nodo hijo : x.hijos) {
-                    if (hijo.homomorfismo().equals(temp.homomorfismo())) {
+                    if (hijo.marcadoACadena().equals(temp.marcadoACadena())) {
                         repetido = true;
                     }
                 }
@@ -521,9 +521,9 @@ public class RedesPetri {
         }
     }
 
-    public Nodo isinQ(Nodo x) {
+    public Nodo estaEnQ(Nodo x) {
         for (int i = 0; i < LQ.size(); i++) {
-            if (LQ.get(i).homomorfismo().equals(x.homomorfismo())) {
+            if (LQ.get(i).marcadoACadena().equals(x.marcadoACadena())) {
                 //LQ.get(i).homomorfismo().equals(x.homomorfismo())
                 LQ.get(i).Duplicado = true;
 
@@ -554,7 +554,7 @@ public class RedesPetri {
         int minit = LQ.get(0).suma;
 
         for (Nodo n : LQ) { //Checamos si hay algún nodo terminal en el arbol de covertura.
-            if (n.tieneW) {
+            if (n.contieneW) {
                 Conservativa = false;
                 Acotada= false;
             } else if (!(n.suma == minit)) {
@@ -563,9 +563,9 @@ public class RedesPetri {
         }
     }
 
-    public Nodo isinP(Nodo x) {
+    public Nodo estaEnP(Nodo x) {
         for (int i = 0; i < LP.size(); i++) {
-            if (LP.get(i).homomorfismo().equals(x.homomorfismo())) {
+            if (LP.get(i).marcadoACadena().equals(x.marcadoACadena())) {
                 //LQ.get(i).homomorfismo().equals(x.homomorfismo())
                 LP.get(i).Duplicado = true;
 
@@ -580,15 +580,6 @@ public class RedesPetri {
     public void primerMarcado() {
         Nodo padre = new Nodo(mark, null, "Ninguna");//int [] marcado, Nodo padre, String tran
         LP.add(padre);
-        /*generarMarcados(padre);
-         generarMarcados(LP.get(0));
-         generarMarcados(LP.get(0));
-         generarMarcados(LP.get(0));
-         generarMarcados(LP.get(0));
-         generarMarcados(LP.get(0));
-         generarMarcados(LP.get(0));
-         generarMarcados(LP.get(0));
-         generarMarcados(LP.get(0));*/// Ralizar generacion mientras p sea distinto a vacio
         while (!LP.isEmpty()) {
             generarMarcados(LP.get(0));
         }
@@ -700,9 +691,9 @@ public class RedesPetri {
 
         //generar lista de vectores para poder iterar
         for (int i = 0; i < mi.length; i++) {
-            int[] temp = new int[mi.length + p.size()];
+            int[] temp = new int[mi.length + P.size()];
             temp[i] = 1;
-            for (int j = 0; j < p.size(); j++) {
+            for (int j = 0; j < P.size(); j++) {
                 temp[mi.length + j] = mi[i][j];
             }
             invariantsTemp.add(temp);
@@ -711,21 +702,21 @@ public class RedesPetri {
         int cont = 0;
         int multiploActual = 1;
         int multiploTemp = 1;
-        int filaTemp[] = new int[mi.length + p.size()];
-        int filaActual[] = new int[mi.length + p.size()];
+        int filaTemp[] = new int[mi.length + P.size()];
+        int filaActual[] = new int[mi.length + P.size()];
         int filasAeliminar[] = new int[invariantsTemp.size() * invariantsTemp.size()];
         Arrays.fill(filasAeliminar, 0);
 
         //imprimirLista(invariantsTemp);
-        for (int columna = mi.length; columna < mi.length + p.size(); columna++) {
+        for (int columna = mi.length; columna < mi.length + P.size(); columna++) {
             for (int tmpo = 0; tmpo < invariantsTemp.size(); tmpo++) {
                 filaTemp = invariantsTemp.get(tmpo);
-                for (int k = 0; k < p.size(); k++) {
+                for (int k = 0; k < P.size(); k++) {
                     if (filaTemp[mi.length + k] == 0) {
                         cont++;
                     }
                 }
-                if (cont == p.size()) {
+                if (cont == P.size()) {
                     invariants.add(invariantsTemp.remove(tmpo));
                 }
                 cont = 0;
@@ -816,12 +807,12 @@ public class RedesPetri {
             }
             for (int tmpo = 0; tmpo < invariantsTemp.size(); tmpo++) {
                 filaTemp = invariantsTemp.get(tmpo);
-                for (int k = 0; k < p.size(); k++) {
+                for (int k = 0; k < P.size(); k++) {
                     if (filaTemp[mi.length + k] == 0) {
                         cont++;
                     }
                 }
-                if (cont == p.size()) {
+                if (cont == P.size()) {
                     invariants.add(invariantsTemp.remove(tmpo));
                 }
                 cont = 0;
@@ -836,9 +827,9 @@ public class RedesPetri {
 
         //generar lista de vectores para poder iterar
         for (int i = 0; i < mi.length; i++) {
-            int[] temp = new int[mi.length + t.size()];
+            int[] temp = new int[mi.length + T.size()];
             temp[i] = 1;
-            for (int j = 0; j < t.size(); j++) {
+            for (int j = 0; j < T.size(); j++) {
                 temp[mi.length + j] = mi[i][j];
             }
             invariantsTemp.add(temp);
@@ -847,20 +838,20 @@ public class RedesPetri {
         int cont = 0;
         int multiploActual = 1;
         int multiploTemp = 1;
-        int filaTemp[] = new int[mi.length + t.size()];
-        int filaActual[] = new int[mi.length + t.size()];
+        int filaTemp[] = new int[mi.length + T.size()];
+        int filaActual[] = new int[mi.length + T.size()];
         int filasAeliminar[] = new int[invariantsTemp.size() * invariantsTemp.size()];
         Arrays.fill(filasAeliminar, 0);
 
-        for (int columna = mi.length; columna < mi.length + t.size(); columna++) {
+        for (int columna = mi.length; columna < mi.length + T.size(); columna++) {
             for (int tmpo = 0; tmpo < invariantsTemp.size(); tmpo++) {
                 filaTemp = invariantsTemp.get(tmpo);
-                for (int k = 0; k < t.size(); k++) {
+                for (int k = 0; k < T.size(); k++) {
                     if (filaTemp[mi.length + k] == 0) {
                         cont++;
                     }
                 }
-                if (cont == t.size()) {
+                if (cont == T.size()) {
                     invariants.add(invariantsTemp.remove(tmpo));
                 }
                 cont = 0;
@@ -1132,9 +1123,9 @@ public class RedesPetri {
     }
 */
     public int[][] miTranspuesta() {
-        int mtran[][] = new int[t.size()][p.size()];
-        for (int i = 0; i < p.size(); i++) {
-            for (int j = 0; j < t.size(); j++) {
+        int mtran[][] = new int[T.size()][P.size()];
+        for (int i = 0; i < P.size(); i++) {
+            for (int j = 0; j < T.size(); j++) {
                 mtran[j][i] = mi[i][j];
             }
         }
@@ -1145,7 +1136,7 @@ public class RedesPetri {
         ArrayList<Nodo> LQt = new ArrayList<Nodo>();
         ArrayList<Nodo> LQt2 = new ArrayList<Nodo>();
         for (Nodo n : LQTiempos) { //Para crear la lista transpuesta.
-            LQt.add(new Nodo(n.marcado, null, n.tranDisparada));
+            LQt.add(new Nodo(n.marcado, null, n.transicionDisparada));
         }
 
         for (Nodo nodo : LQTiempos) {
@@ -1161,8 +1152,8 @@ public class RedesPetri {
 
     public boolean esComFueCon() {
         boolean CFC = false;
-        int transInCFC[] = new int[t.size()];
-        int AllCFC[] = new int[copiaLQdescendiente.size()];
+        int transInCFC[] = new int[T.size()];
+        int AllCFC[] = new int[copiaLQ.size()];
         boolean temp = true;
         int iteradorListaCFC=-1;
         ArrayList<Nodo> listaDeCFCallT = new ArrayList<>();
@@ -1170,11 +1161,11 @@ public class RedesPetri {
         String x="";
         String y="";
         
-        for (ArrayList<Nodo> listaCFC : copiaLQdescendiente) {
+        for (ArrayList<Nodo> listaCFC : copiaLQ) {
             iteradorListaCFC++;
             for (Nodo nodo : listaCFC) {
                 for (Nodo hijos : nodo.hijos) {
-                    for (String transi : hijos.tranDisparada) {
+                    for (String transi : hijos.transicionDisparada) {
                         if (transi != "Ninguna") {
                             String c = transi.substring(1);
                             int p = Integer.parseInt(c);
@@ -1191,7 +1182,7 @@ public class RedesPetri {
                     }
                 }
             }
-            for (int z = 0; z < t.size(); z++) {
+            for (int z = 0; z < T.size(); z++) {
                 if (transInCFC[z] != 1) {
                     temp = false;
                 }
@@ -1205,7 +1196,7 @@ public class RedesPetri {
             temp=true;
         }
         iteradorListaCFC = -1;
-        for(ArrayList<Nodo> listaCNFC: copiaLQdescendiente){
+        for(ArrayList<Nodo> listaCNFC: copiaLQ){
             iteradorListaCFC++;
             if(indexListaCFC != iteradorListaCFC){
                 for(Nodo iterandoN : listaCNFC){
@@ -1215,8 +1206,8 @@ public class RedesPetri {
                     for(int s = 0; s<listaDeCFCallT.size();s++){
                         Nodo verMarcado = listaDeCFCallT.get(s);
                         for(Nodo hijositer: nodoAnalizando.hijos ){
-                            y=verMarcado.homomorfismo();
-                            x=hijositer.homomorfismo();
+                            y=verMarcado.marcadoACadena();
+                            x=hijositer.marcadoACadena();
                             if(x.equals(y) && !listaDeCFCallT.contains(iterandoN) ){
                                 listaDeCFCallT.add(iterandoN);
                                 AllCFC[iteradorListaCFC]=1;
@@ -1227,7 +1218,7 @@ public class RedesPetri {
             }
         }
         CFC=true;
-        for (int r = 0; r < copiaLQdescendiente.size(); r++) {
+        for (int r = 0; r < copiaLQ.size(); r++) {
             if (AllCFC[r] != 1) {
                 CFC = false;
             }
@@ -1265,17 +1256,17 @@ public class RedesPetri {
 
   public int DFS(ArrayList<Nodo> G, Nodo u) {
         time = 0;
-        tInCFC.clear();
+        tEnFuertementeConexo.clear();
         int indiceCFC = 0;
-        copiaLQdescendiente.clear();
+        copiaLQ.clear();
         for (Nodo nodo : G) {
             nodo.padre = null;
             nodo.color = "WHITE";
         }
         for (Nodo nodoTemp : G) {
             if ("WHITE".equals(nodoTemp.color)) {
-                tInCFC.add("cambio");
-                copiaLQdescendiente.add(new ArrayList<Nodo>());
+                tEnFuertementeConexo.add("cambio");
+                copiaLQ.add(new ArrayList<Nodo>());
                 DFS_Visit(G, nodoTemp, indiceCFC);
                 indiceCFC++;
             }
@@ -1292,14 +1283,14 @@ public class RedesPetri {
         for (int h = 0; h < nodoTemp.hijos.size(); h++) {
             if (nodoTemp.hijos.get(h).color.equals("WHITE")) {
                 nodoTemp.hijos.get(h).padre = nodoTemp;
-                tInCFC.add(nodoTemp.homomorfismo());
+                tEnFuertementeConexo.add(nodoTemp.marcadoACadena());
                 DFS_Visit(G, nodoTemp.hijos.get(h), indiceCFCtmp);
             }
         }
         nodoTemp.color = "BLACK";
         time = time + 1;
         nodoTemp.tiempoFinal = time;
-        copiaLQdescendiente.get(indiceCFCtmp).add(nodoTemp);
+        copiaLQ.get(indiceCFCtmp).add(nodoTemp);
 
         return 0;
     }
@@ -1324,7 +1315,7 @@ public class RedesPetri {
     public int numeroTenTinvariant() {
         int transi[][] = miTranspuesta();
         ArrayList<int[]> tinva = CalculaTInvariantes(transi);
-        int sumTinv[] = new int[t.size()];
+        int sumTinv[] = new int[T.size()];
         int numTenTinv = 0;
 
         for (int[] tinv : tinva) {
@@ -1345,12 +1336,12 @@ public class RedesPetri {
    public void esReversible() {
         ArrayList<Nodo> copiaLQ = new ArrayList<>(LQ);
         DFS(copiaLQ, copiaLQ.get(0));
-        ArrayList<Nodo> G_transpuesta = computeGt(copiaLQdescendiente.get(0));
-        ArrayList<Nodo> G_transpuestaDesentiente= acomodar(G_transpuesta, copiaLQdescendiente.get(0));
+        ArrayList<Nodo> G_transpuesta = computeGt(RedesPetri.copiaLQ.get(0));
+        ArrayList<Nodo> G_transpuestaDesentiente= acomodar(G_transpuesta, RedesPetri.copiaLQ.get(0));
         System.out.print("segunfaaaa\n");
 
         DFS(G_transpuestaDesentiente, G_transpuestaDesentiente.get(0));
-        if (copiaLQdescendiente.size() == 1 && numeroTenTinvariant() == t_disparados.size()) {
+        if (RedesPetri.copiaLQ.size() == 1 && numeroTenTinvariant() == transiciones_disparadas.size()) {
             propiedades+="Es reversible\n";
         } else {
             propiedades+="No es reversible\n";
