@@ -57,7 +57,7 @@ public class RedesPetri {
     ArrayList<arco> a = new ArrayList();
     ArrayList<Nodo> LP = new ArrayList();//lista de nodos que se van formando, pendientes
     ArrayList<Nodo> LQ = new ArrayList();//nodos ya procesados
-    static ArrayList<ArrayList<Nodo>> copiaLQ = new ArrayList<>();//nodos ya procesados copia
+   static ArrayList<ArrayList<Nodo>> copiaLQ = new ArrayList<>();//nodos ya procesados copia
     ArrayList<String> tEnFuertementeConexo = new ArrayList<>();//tInCFC
     int time = 0;
 
@@ -136,6 +136,7 @@ public class RedesPetri {
         } else {
             propiedades += "No es repetitiva" + "\n";
         }
+        
         esReversible();
         esViva();
     }
@@ -438,7 +439,9 @@ public class RedesPetri {
                         //padre.hijos.add(isinQ(temp));
                         Nodo n = estaEnHijos(padre, temp);
                         if (n == null) {
-                            padre.hijos.add(estaEnQ(temp));
+                            padre.hijos.add(estaEnQ(temp));//esta en q devuelve un nodo
+                            Nodo tempo=estaEnQ(temp);
+                            tempo.anadirTrans(temp.transicionDisparada.get(0));
                         } else {
                             n.anadirTrans(T.get(j).name);
                         }
@@ -447,6 +450,9 @@ public class RedesPetri {
                         Nodo n = estaEnHijos(padre, temp);
                         if (n == null) {
                             padre.hijos.add(estaEnP(temp));
+                            Nodo tempo=estaEnP(temp);
+                            tempo.anadirTrans(temp.transicionDisparada.get(0));
+                       
                         } else {
                             n.anadirTrans(T.get(j).name);
                         }
